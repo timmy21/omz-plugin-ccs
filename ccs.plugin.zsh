@@ -1,69 +1,41 @@
 # Claude Code Settings switcher
-# Usage: ccs [config_name]
+# Usage: ccs [provider_name]
 
 function ccs() {
-    local settings_dir="$HOME/.claude-code-custom/settings"
-    local target_link="$HOME/.claude/settings.json"
+    local providers_dir="$HOME/.claude-code-custom/providers"
 
-    # No argument - list all configs
+    # No argument - list all providers
     if [[ -z "$1" ]]; then
-        local configs=("$settings_dir"/*.json(N))
-        local current_target
+        local configs=("$providers_dir"/*.json(N))
 
-        # Get current link target if exists
-        if [[ -L "$target_link" ]]; then
-            current_target=$(readlink "$target_link")
+        if (( ${#configs} == 0 )); then
+            echo "No providers found in $providers_dir"
+            return
         fi
 
         for config in "${configs[@]}"; do
-            local basename="${config:t}"
-            local marker=" "
-
-            # Check if this is the current config
-            if [[ "$current_target" == "$config" ]]; then
-                marker="*"
-            fi
-
-            echo "$marker ${basename%.json}"
+            echo "  ${${config:t}%.json}"
         done
         return
     fi
 
-    # With argument - switch config
-    local config_file="$settings_dir/$1.json"
+    # With argument - launch claude with that provider's settings
+    local config_file="$providers_dir/$1.json"
 
-    # Check if config file exists
     if [[ ! -f "$config_file" ]]; then
-        echo "Error: Config file '$config_file' not found" >&2
+        echo "Error: Provider '$1' not found ($config_file)" >&2
         return 1
     fi
 
-    # Create target directory if not exists
-    local target_dir=$(dirname "$target_link")
-    if [[ ! -d "$target_dir" ]]; then
-        mkdir -p "$target_dir"
-    fi
-
-    # Remove existing link if exists
-    if [[ -L "$target_link" ]]; then
-        rm "$target_link"
-    fi
-
-    # Create new symlink
-    ln -s "$config_file" "$target_link"
-    echo "Switched to: $1"
+    claude --settings "$config_file"
 }
 
 function _ccs() {
     local -a configs
-    local settings_dir="$HOME/.claude-code-custom/settings"
-    
-    # Get config names (filenames without extension)
-    # (N) - nullglob (don't error if no matches)
-    # :t  - tail (basename)
-    # :r  - root (remove extension)
-    configs=("$settings_dir"/*.json(N:t:r))
-    
+    local providers_dir="$HOME/.claude-code-custom/providers"
+
+    configs=("$providers_dir"/*.json(N:t:r))
+
     if (( ${#configs} )); then
         compadd -a configs
     fi
