@@ -1,5 +1,5 @@
 # Claude Code Settings switcher
-# Usage: ccs [provider_name]
+# Usage: ccs [provider_name] [args...]
 
 function ccs() {
     local providers_dir="$HOME/.claude-code-custom/providers"
@@ -27,7 +27,7 @@ function ccs() {
         return 1
     fi
 
-    claude --settings "$config_file"
+    claude --settings "$config_file" "${@:2}"
 }
 
 function _ccs() {
